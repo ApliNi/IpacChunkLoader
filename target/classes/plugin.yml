@@ -1,0 +1,20 @@
+name: IpacChunkLoader
+version: '1.0-SNAPSHOT'
+main: io.github.aplini.ipacChunkLoader.IpacChunkLoader
+api-version: '1.21'
+authors: [ ApliNi ]
+website: https://github.com/aplini/
+
+commands:
+  icl:
+    description: IpacChunkLoader 插件的主命令
+    usage: /<command>
+
+permissions:
+
+  IpacChunkLoader.reload:
+    description: '重载插件'
+    default: op
+  IpacChunkLoader.list:
+    description: '查看活跃加载器列表'
+    default: op

@@ -1,0 +1,37 @@
+
+# 识别盔甲架名称
+name-regex: '^\s*(?<id>.{0,24}?)\s*(?:区块加载|区块加载器)\s*(?<radius>\d+)\s*$'
+
+# 当 id 匹配器没有匹配到内容时使用的默认值
+default-id: '未命名'
+
+# 激活后盔甲架名称 %id% %radius% %time%
+display-format: '%id% [区块加载器] %radius% - %time%'
+
+# 过期后盔甲架名称 %id% %radius% %time%
+expiry-format: '%id% [区块加载器] %radius% - %time%'
+
+# 初始/累加时长
+add-hours: 4
+
+# 最大时长
+max-hours: 24
+
+# 最大加载半径
+max-radius: 10
+
+# 最大同时存在数量
+max-count: 10
+
+# 剩余时间低于指定小时数时执行指令
+warn-hours: 2
+# %world% %x% %y% %z% %name% %id% %radius% %time%
+warn-commands:
+  - 'say 区块加载器即将过期 [%world%/%x%/%y%/%z%] [%id%] %radius% - %time%'
+
+msg:
+  activate: '§bIpacEL §f> §a区块加载器已激活'
+  quant-limit: '§bIpacEL §f> §b区块加载器达到数量限制'
+  list-header: '§bIpacEL §f> §a活跃加载器列表:'
+  list-line: '  §7- [%world%/%x%/%y%/%z%] [%id%] %radius% - %time%' # %world% %x% %y% %z% %name% %id% %radius% %time%
+  list-hover: '点击传送'
