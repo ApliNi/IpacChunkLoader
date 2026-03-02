@@ -42,6 +42,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
     private int maxRadius;
     private int maxCount;
     private int warnHours;
+    private boolean persistence;
     private List<String> warnCommands;
     private Plugin plugin;
 
@@ -74,19 +75,24 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         // 每秒执行一次更新任务 (20 ticks)
         new LoaderTask().runTaskTimer(this, 20L, 20L);
 
+        // 启动时的扫描逻辑 (持久化恢复或崩溃清理)
+        scanAndProcessLoaders();
+
         getLogger().info("[IpacChunkLoader] 已加载");
     }
 
     @Override
     public void onDisable() {
-        // 插件卸载时，仅释放由本插件管理的区块
-        activeLoaderChunks.values().forEach(chunks -> {
-            for (World world : Bukkit.getWorlds()) {
-                for (long key : chunks) {
-                    world.setChunkForceLoaded((int) key, (int) (key >> 32), false);
+        // 插件卸载时，如果不开启持久化，则释放由本插件管理的区块
+        if (!persistence) {
+            activeLoaderChunks.values().forEach(chunks -> {
+                for (World world : Bukkit.getWorlds()) {
+                    for (long key : chunks) {
+                        world.setChunkForceLoaded((int) key, (int) (key >> 32), false);
+                    }
                 }
-            }
-        });
+            });
+        }
         activeLoaderChunks.clear();
         activeLoaders.clear();
     }
@@ -102,8 +108,49 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         addHours = plugin.getConfig().getInt("add-hours", 4);
         maxRadius = plugin.getConfig().getInt("max-radius", 10);
         maxCount = plugin.getConfig().getInt("max-count", 10);
+        persistence = plugin.getConfig().getBoolean("persistence", true);
         warnHours = plugin.getConfig().getInt("warn-hours", 1);
         warnCommands = plugin.getConfig().getStringList("warn-commands");
+    }
+
+    private void scanAndProcessLoaders() {
+        int recoveredCount = 0;
+        int cleanedCount = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (Chunk chunk : world.getForceLoadedChunks()) {
+                for (Entity entity : chunk.getEntities()) {
+                    if (entity instanceof ArmorStand as) {
+                        PersistentDataContainer pdc = as.getPersistentDataContainer();
+                        if (pdc.has(KEY_RADIUS, INTEGER) && pdc.has(KEY_EXPIRY, LONG)) {
+                            
+                            // 如果开启持久化，则将其添加到活跃列表重新接管
+                            if (persistence) {
+                                activeLoaders.add(as);
+                                recoveredCount++;
+                            } 
+                            // 否则在启动时清理残留的强加载状态 (应对崩溃情况)
+                            else {
+                                Integer r = pdc.get(KEY_RADIUS, INTEGER);
+                                if (r != null) {
+                                    Chunk center = as.getLocation().getChunk();
+                                    for (int x = -r; x <= r; x++) {
+                                        for (int z = -r; z <= r; z++) {
+                                            world.setChunkForceLoaded(center.getX() + x, center.getZ() + z, false);
+                                        }
+                                    }
+                                    cleanedCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (persistence && recoveredCount > 0) {
+            getLogger().info("[IpacChunkLoader] 启动扫描: 已自动恢复 " + recoveredCount + " 个活跃加载器");
+        } else if (!persistence && cleanedCount > 0) {
+            getLogger().info("[IpacChunkLoader] 启动清理: 已重置 " + cleanedCount + " 个残留加载器的强加载状态");
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -375,6 +422,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
             List<String> list = new ArrayList<>();
             list.add("reload"); // 重载配置
             list.add("list");   // 加载器列表
+            list.add("clear");  // 清理所有加载器
             return list;
         }
         return null;
@@ -390,6 +438,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                             "  指令:\n"+
                             "    - /icl reload          - 重载配置\n"+
                             "    - /icl list            - 查看所有加载器\n"+
+                            "    - /icl clear           - 清理所有加载器和强加载区块\n"+
                             "  统计信息:\n"+
                             "    - 加载器数量: "+ activeLoaders.size() +"\n"+
                             "    - 强加载区块数量: "+ getForceLoadedChunksCount() +"\n"
@@ -445,6 +494,44 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                         .build();
                 sender.sendMessage(line);
             }
+            return true;
+        }
+
+        // 清理所有加载器和强加载区块
+        else if(args[0].equals("clear")){
+            if(!sender.hasPermission("IpacChunkLoader.clear")) return false;
+            
+            int worldCount = 0;
+            int chunkCount = 0;
+            
+            // 1. 清理所有世界的所有强加载区块 (包括非插件添加的)
+            for (World world : Bukkit.getWorlds()) {
+                Collection<Chunk> forcedChunks = world.getForceLoadedChunks();
+                if (!forcedChunks.isEmpty()) {
+                    worldCount++;
+                    chunkCount += forcedChunks.size();
+                    for (Chunk chunk : forcedChunks) {
+                        world.setChunkForceLoaded(chunk.getX(), chunk.getZ(), false);
+                    }
+                }
+            }
+            
+            // 2. 清理所有本插件追踪的实体 PDC 数据 (如果实体还在已加载区块中)
+            for (ArmorStand as : activeLoaders) {
+                if (as.isValid()) {
+                    PersistentDataContainer pdc = as.getPersistentDataContainer();
+                    pdc.remove(KEY_RADIUS);
+                    pdc.remove(KEY_EXPIRY);
+                    pdc.remove(KEY_WARNED);
+                    pdc.remove(KEY_ID);
+                }
+            }
+            
+            // 3. 清理内存状态
+            activeLoaders.clear();
+            activeLoaderChunks.clear();
+            
+            sender.sendMessage("[ICL] 已清理 " + worldCount + " 个世界的 " + chunkCount + " 个强加载区块, 并释放所有活跃加载器");
             return true;
         }
 

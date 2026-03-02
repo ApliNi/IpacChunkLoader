@@ -23,6 +23,11 @@ max-radius: 10
 # 最大同时存在数量
 max-count: 10
 
+# 持久化设置
+# true:  启动服务器后恢复之前活跃的加载器, 且在插件卸载时不释放区块
+# false: 插件卸载时主动释放所有区块, 且在启动时清理残留的强加载区块
+persistence: true
+
 # 剩余时间低于指定小时数时执行指令
 warn-hours: 2
 # %world% %x% %y% %z% %name% %id% %radius% %time%
