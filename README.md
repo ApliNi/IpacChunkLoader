@@ -28,6 +28,7 @@ https://modrinth.com/plugin/ipacchunkloader
 - `/icl reload` - 重载插件
 - `/icl list` - 查看活跃加载器列表
 - `/icl clear` - 清除所有加载器和强加载区块 (包括非插件添加的)
+- `/icl tp <UUID>` - 传送至活跃加载器
 
 ### 权限
 
@@ -43,7 +44,11 @@ permissions:
   IpacChunkLoader.clear:
     description: '清理所有强加载区块和加载器'
     default: op
+  IpacChunkLoader.tp:
+    description: '传送至活跃加载器'
+    default: op
 ```
+
 
 ### 配置文件
 ```yaml

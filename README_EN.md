@@ -28,6 +28,7 @@ A notification will be sent 2 hours before expiration.
 - `/icl reload` - Reload the plugin
 - `/icl list` - View the list of active loaders
 - `/icl clear` - Clear all force-loaded chunks and loaders (Including those added by non-plugins)
+- `/icl tp <UUID>` - Teleport to an active loader
 
 ### Permissions
 
@@ -42,6 +43,9 @@ permissions:
     default: op
   IpacChunkLoader.clear:
     description: 'Clear all force-loaded chunks and loaders'
+    default: op
+  IpacChunkLoader.tp:
+    description: 'Teleport to an active loader'
     default: op
 ```
 

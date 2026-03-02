@@ -21,3 +21,6 @@ permissions:
   IpacChunkLoader.clear:
     description: '清理所有强加载区块和加载器'
     default: op
+  IpacChunkLoader.tp:
+    description: '传送至活跃加载器'
+    default: op

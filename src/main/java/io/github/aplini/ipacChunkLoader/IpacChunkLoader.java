@@ -423,6 +423,14 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
             list.add("reload"); // 重载配置
             list.add("list");   // 加载器列表
             list.add("clear");  // 清理所有加载器
+            list.add("tp");     // 传送至加载器
+            return list;
+        }
+        if(args.length == 2 && args[0].equals("tp")){
+            List<String> list = new ArrayList<>();
+            for (ArmorStand as : activeLoaders) {
+                list.add(as.getUniqueId().toString());
+            }
             return list;
         }
         return null;
@@ -467,7 +475,6 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                 String timeStr = remaining > 0 ? formatTime(remaining) : "00:00:00";
                 org.bukkit.Location loc = as.getLocation();
                 String worldName = loc.getWorld().getName();
-                String worldKey = loc.getWorld().key().asString();
                 int x = loc.getBlockX();
                 int y = loc.getBlockY();
                 int z = loc.getBlockZ();
@@ -490,9 +497,45 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                 Component line = Component.text()
                         .append(Component.text(lineText))
                         .hoverEvent(Component.text(plugin.getConfig().getString("msg.list-hover", "")))
-                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/minecraft:execute in " + worldKey + " run tp @s " + x + " " + y + " " + z))
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/icl tp " + as.getUniqueId()))
                         .build();
                 sender.sendMessage(line);
+            }
+            return true;
+        }
+
+        // 传送至加载器
+        else if(args[0].equals("tp")){
+            if(!sender.hasPermission("IpacChunkLoader.tp")) return false;
+            if(!(sender instanceof org.bukkit.entity.Player player)){
+                sender.sendMessage("只有玩家可以执行此命令");
+                return true;
+            }
+            if(args.length < 2){
+                sender.sendMessage("用法: /icl tp <UUID>");
+                return true;
+            }
+            UUID uuid;
+            try {
+                uuid = UUID.fromString(args[1]);
+            } catch (IllegalArgumentException e) {
+                sender.sendMessage("无效的 UUID");
+                return true;
+            }
+            
+            // 在活跃列表中查找实体
+            ArmorStand target = null;
+            for (ArmorStand as : activeLoaders) {
+                if (as.getUniqueId().equals(uuid)) {
+                    target = as;
+                    break;
+                }
+            }
+            
+            if (target != null && target.isValid()) {
+                player.teleport(target.getLocation());
+            } else {
+                sender.sendMessage("加载器不存在或已失效");
             }
             return true;
         }
