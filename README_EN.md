@@ -87,6 +87,13 @@ warn-hours: 2
 warn-commands:
   - 'say Chunk loader about to expire [%world%/%x%/%y%/%z%] [%id%] %radius% - %time%'
 
+# Dimension display names
+# If defined, the %world% variable will use the corresponding display name; otherwise, the default dimension name is used.
+world-names:
+  world: 'Overworld'
+  world_nether: 'Nether'
+  world_the_end: 'The End'
+
 msg:
   activate: '§bIpacEL §f> §aChunk loader activated'
   quant-limit: '§bIpacEL §f> §bChunk loader limit reached'

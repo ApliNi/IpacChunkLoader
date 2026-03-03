@@ -44,6 +44,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
     private int warnHours;
     private boolean persistence;
     private List<String> warnCommands;
+    private Map<String, String> worldNames;
     private Plugin plugin;
 
     private NamespacedKey KEY_RADIUS;
@@ -111,6 +112,14 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         persistence = plugin.getConfig().getBoolean("persistence", true);
         warnHours = plugin.getConfig().getInt("warn-hours", 1);
         warnCommands = plugin.getConfig().getStringList("warn-commands");
+        
+        worldNames = new HashMap<>();
+        org.bukkit.configuration.ConfigurationSection worldNamesSection = plugin.getConfig().getConfigurationSection("world-names");
+        if (worldNamesSection != null) {
+            for (String key : worldNamesSection.getKeys(false)) {
+                worldNames.put(key, worldNamesSection.getString(key));
+            }
+        }
     }
 
     private void scanAndProcessLoaders() {
@@ -332,7 +341,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                     if (warnCommands != null && !warnCommands.isEmpty()) {
                         for (String warnCommand : warnCommands) {
                             String cmd = warnCommand
-                                    .replace("%world%", as.getWorld().getName())
+                                    .replace("%world%", getWorldDisplayName(as.getWorld()))
                                     .replace("%x%", String.valueOf(as.getLocation().getBlockX()))
                                     .replace("%y%", String.valueOf(as.getLocation().getBlockY()))
                                     .replace("%z%", String.valueOf(as.getLocation().getBlockZ()))
@@ -467,14 +476,24 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
             if(!sender.hasPermission("IpacChunkLoader.list")) return false;
             sender.sendMessage(plugin.getConfig().getString("msg.list-header", ""));
             long now = System.currentTimeMillis();
-            for (ArmorStand as : activeLoaders) {
+
+            // 使用排序器进行国际化文本排序 (例如中文按拼音排序)
+            List<ArmorStand> sortedLoaders = new ArrayList<>(activeLoaders);
+            java.text.Collator collator = java.text.Collator.getInstance(Locale.CHINA);
+            sortedLoaders.sort((as1, as2) -> {
+                String id1 = as1.getPersistentDataContainer().get(KEY_ID, PersistentDataType.STRING);
+                String id2 = as2.getPersistentDataContainer().get(KEY_ID, PersistentDataType.STRING);
+                return collator.compare(id1 != null ? id1 : "", id2 != null ? id2 : "");
+            });
+
+            for (ArmorStand as : sortedLoaders) {
                 Long expiry = as.getPersistentDataContainer().get(KEY_EXPIRY, LONG);
                 if (expiry == null) continue;
 
                 long remaining = expiry - now;
                 String timeStr = remaining > 0 ? formatTime(remaining) : "00:00:00";
                 org.bukkit.Location loc = as.getLocation();
-                String worldName = loc.getWorld().getName();
+                String worldName = getWorldDisplayName(loc.getWorld());
                 int x = loc.getBlockX();
                 int y = loc.getBlockY();
                 int z = loc.getBlockZ();
@@ -580,6 +599,11 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
 
         // 返回 false 时, 玩家将收到命令不存在的错误
         return false;
+    }
+
+    private String getWorldDisplayName(World world) {
+        if (world == null) return "Unknown";
+        return worldNames.getOrDefault(world.getName(), world.getName());
     }
 
     private int getForceLoadedChunksCount() {

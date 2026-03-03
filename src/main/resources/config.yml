@@ -34,6 +34,13 @@ warn-hours: 2
 warn-commands:
   - 'say 区块加载器即将过期 [%world%/%x%/%y%/%z%] [%id%] %radius% - %time%'
 
+# 维度显示名称
+# 如果有定义, 那么 %world% 变量将使用对应的显示名称, 否则使用默认的维度名
+world-names:
+  world: '主世界'
+  world_nether: '地狱'
+  world_the_end: '末地'
+
 msg:
   activate: '§bIpacEL §f> §a区块加载器已激活'
   quant-limit: '§bIpacEL §f> §b区块加载器达到数量限制'
