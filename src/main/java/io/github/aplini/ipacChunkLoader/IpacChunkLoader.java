@@ -42,6 +42,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
     private int maxRadius;
     private int maxCount;
     private int warnHours;
+    private boolean inheritId;
     private boolean persistence;
     private List<String> warnCommands;
     private Map<String, String> worldNames;
@@ -109,6 +110,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         addHours = plugin.getConfig().getInt("add-hours", 4);
         maxRadius = plugin.getConfig().getInt("max-radius", 10);
         maxCount = plugin.getConfig().getInt("max-count", 10);
+        inheritId = plugin.getConfig().getBoolean("inherit-id", true);
         persistence = plugin.getConfig().getBoolean("persistence", true);
         warnHours = plugin.getConfig().getInt("warn-hours", 1);
         warnCommands = plugin.getConfig().getStringList("warn-commands");
@@ -190,8 +192,14 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
             } catch (IllegalArgumentException e) {
                 radiusVal = -1;
             }
+            PersistentDataContainer pdc = armorStand.getPersistentDataContainer();
             if (idVal.isEmpty()) {
-                idVal = defaultId;
+                String inheritedId = pdc.get(KEY_ID, PersistentDataType.STRING);
+                if (inheritId && inheritedId != null && !inheritedId.isBlank()) {
+                    idVal = inheritedId;
+                } else {
+                    idVal = defaultId;
+                }
             }
             final int radius = radiusVal;
             final String id = idVal;
@@ -203,7 +211,6 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
             }
 
             long now = System.currentTimeMillis();
-            PersistentDataContainer pdc = armorStand.getPersistentDataContainer();
             Long currentExpiry = pdc.get(KEY_EXPIRY, LONG);
             long newExpiry;
 
@@ -289,7 +296,9 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         pdc.remove(KEY_RADIUS);
         pdc.remove(KEY_EXPIRY);
         pdc.remove(KEY_WARNED);
-        pdc.remove(KEY_ID);
+        if (!inheritId) {
+            pdc.remove(KEY_ID);
+        }
     }
 
     private boolean isChunkNeededByOthers(UUID excludeUuid, long chunkKey) {
