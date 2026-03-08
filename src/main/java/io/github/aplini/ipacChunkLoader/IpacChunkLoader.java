@@ -343,8 +343,8 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
 
             long remaining = expiry - System.currentTimeMillis();
 
-            // 检查过期预警
-            if (remaining > 0 && remaining < (long) warnHours * 3600 * 1000) {
+            // 检查过期预警，提前 1 秒触发以显示整点倒计时
+            if (remaining > 0 && remaining <= (long) warnHours * 3600 * 1000 + 1000) {
                 if (!pdc.has(KEY_WARNED, PersistentDataType.BYTE)) {
                     pdc.set(KEY_WARNED, PersistentDataType.BYTE, (byte) 1);
                     if (warnCommands != null && !warnCommands.isEmpty()) {
@@ -362,7 +362,7 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
                         }
                     }
                 }
-            } else if (remaining > (long) warnHours * 3600 * 1000) {
+            } else if (remaining > (long) warnHours * 3600 * 1000 + 1000) {
                 pdc.remove(KEY_WARNED);
             }
 
