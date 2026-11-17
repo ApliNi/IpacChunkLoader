@@ -172,11 +172,18 @@ public final class IpacChunkLoader extends JavaPlugin implements Listener, Comma
         if (!item.hasItemMeta()) return;
 
         org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
-        // 使用 Adventure API 获取 Component 并转换为纯文本
+        
+        // 使用 Adventure API 获取 Component 并转换为纯文本，并增加兼容性处理
         Component displayName = meta.displayName();
-        if (displayName == null) return;
-
-        String customName = PlainTextComponentSerializer.plainText().serialize(displayName);
+        String customName = "";
+        if (displayName != null) {
+            customName = PlainTextComponentSerializer.plainText().serialize(displayName);
+        } else if (meta.hasDisplayName()) {
+            customName = meta.getDisplayName();
+        }
+        
+        getLogger().info("[IpacChunkLoader] Processing naming: " + customName);
+        if (customName.isEmpty()) return;
 
         Matcher matcher = pattern.matcher(customName);
         if (matcher.find()) {
