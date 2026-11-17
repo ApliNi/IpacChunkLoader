@@ -55,6 +55,9 @@ permissions:
 # Regex to identify armor stand names
 name-regex: '^\s*(?<id>.{0,24}?)\s*(?:ChunkLoad|ChunkLoader)\s*(?<radius>\d+)\s*$'
 
+# Inherit the previous ID if the nametag does not match a new one
+inherit-id: true
+
 # Default value used when the ID matcher finds no content
 default-id: 'Unnamed'
 

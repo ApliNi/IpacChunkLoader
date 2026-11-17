@@ -1,5 +1,5 @@
 name: IpacChunkLoader
-version: '1.4'
+version: '1.5'
 main: io.github.aplini.ipacChunkLoader.IpacChunkLoader
 api-version: '1.21'
 authors: [ ApliNi ]
