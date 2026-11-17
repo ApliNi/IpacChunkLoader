@@ -1,6 +1,9 @@
 # User-specific stuff
 .idea/
-
+.settings/
+.classpath
+.factorypath
+.project
 *.iml
 *.ipr
 *.iws
@@ -111,3 +114,5 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+.pi-temp/
